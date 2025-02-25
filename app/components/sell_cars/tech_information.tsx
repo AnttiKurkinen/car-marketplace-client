@@ -10,27 +10,18 @@ const API_URL = "http://localhost:4000";
 
 const TechnicalInformationForm: React.FC = () => {
   const router = useRouter();
+  const [carID, setCarID] = useState<number | null>(null);
   const [userID, setUserID] = useState<number | null>(null);
   const [mileage, setMileage] = useState("");
   const [selectedFuelType, setSelectedFuelType] = useState("");
   const [selectedDriveType, setSelectedDriveType] = useState("");
   const [selectedTransmission, setSelectedTransmission] = useState("");
-  const [engineSize, setEngineSize] = useState("");
-  const [gearboxType, setGearboxType] = useState("");
-  const [noOfPersons, setNoOfPersons] = useState("");
-  const [noOfDoors, setNoOfDoors] = useState("");
-  const [power, setPower] = useState("");
-  const [fuelConsumption, setFuelConsumption] = useState<{
-    [key: string]: number | null;
-  }>({
-    urban: null,
-    road: null,
-    combined: null,
-  });
+  const [selectedEngineCapacity, setSelectedEngineCapacity] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUserID = localStorage.getItem("userID");
+    const storedCarID = localStorage.getItem("CarID");
 
     if (!token) {
       router.push("/profile");
@@ -40,6 +31,13 @@ const TechnicalInformationForm: React.FC = () => {
     if (storedUserID) {
       setUserID(parseInt(storedUserID));
     }
+
+    if (!storedCarID) {
+      router.push("/new-listing"); // Redirect back if CarID is missing
+      return;
+    }
+
+    setCarID(parseInt(storedCarID));
   }, []);
 
   const handleFuelTypeChange = (fuelTypeId: string) => {
@@ -58,28 +56,33 @@ const TechnicalInformationForm: React.FC = () => {
     e.preventDefault();
 
     const payload = {
-      CarID: 123,
-      Mileage: 50000,
-      EngineCapacity: 2.0,
-      Power: 150,
-      Torque: 300,
-      TopSpeed: 220,
-      Acceleration: 7.5,
-      CO2Emissions: 120,
-      FuelConsumptionCity: 8.5,
-      FuelConsumptionHighway: 5.2,
-      FuelConsumptionCombined: 6.5,
-      MassEmpty: 1400,
-      MassTotal: 1900,
-      TowCapacityBraked: 1500,
-      TowCapacityUnbraked: 750,
-      SeatingCapacity: 5,
-      DoorCount: 4,
-      SteeringSide: "Left",
-      FuelTypeID: 1,
-      DriveTypeID: 2,
-      TransmissionID: 1,
+      CarID: carID,
+      Mileage: mileage ? parseInt(mileage) : undefined,
+      FuelTypeID: selectedFuelType ? parseInt(selectedFuelType) : undefined,
+      DriveTypeID: selectedDriveType ? parseInt(selectedDriveType) : undefined,
+      TransmissionID: selectedTransmission ? parseInt(selectedTransmission) : undefined,
+      EngineCapacity: selectedEngineCapacity ? parseInt(selectedEngineCapacity) : undefined,
     };
+
+    try {
+      const response = await fetch(`${API_URL}/cartechnicaldetails`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Car created:", data);
+      router.push("/sell_cars/images");
+    } catch (error) {
+      console.error("Error creating car:", error);
+    }
   };
 
   return (
@@ -88,7 +91,13 @@ const TechnicalInformationForm: React.FC = () => {
         Technical Information
       </h2>
 
-      <form className="space-y-4 max-w-3xl mx-auto">
+      <form
+        className="space-y-1.5 max-w-3xl mx-auto"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit(e);
+        }}
+      >
         <div className="flex items-center gap-4">
           <label className="min-w-[12rem] font-semibold text-right">
             Mileage (driven km) *
@@ -97,6 +106,7 @@ const TechnicalInformationForm: React.FC = () => {
             type="number"
             className="input input-accent w-full"
             placeholder="Enter mileage"
+            onChange={(e) => setMileage(e.target.value)}
           />
         </div>
 
@@ -135,86 +145,21 @@ const TechnicalInformationForm: React.FC = () => {
 
         <div className="flex items-center gap-4">
           <label className="min-w-[12rem] font-semibold text-right">
-            Engine Size *
+            Engine capacity *
           </label>
-          <select className="select select-accent w-full">
-            <option>Select Engine size</option>
+          <select
+            className="select select-accent w-full"
+            defaultValue=""
+            value={selectedEngineCapacity}
+            onChange={(e) => setSelectedEngineCapacity(e.target.value)}
+          >
+            <option>Select Engine capacity</option>
             <option>1.0L</option>
             <option>1.6L</option>
             <option>2.0L</option>
             <option>3.0L</option>
           </select>
         </div>
-
-        <div className="flex items-center gap-4">
-          <label className="min-w-[12rem] font-semibold text-right">
-            No. of persons
-          </label>
-          <select className="select select-accent w-full">
-            <option>Select No. of persons</option>
-            {[...Array(10)].map((_, i) => (
-              <option key={i}>{i + 1}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <label className="min-w-[12rem] font-semibold text-right">
-            No. of doors
-          </label>
-          <select className="select select-accent w-full">
-            <option>Select No. of doors</option>
-            {[2, 3, 4, 5].map((num) => (
-              <option key={num}>{num}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <label className="min-w-[12rem] font-semibold text-right">
-            Power
-          </label>
-          <input
-            type="number"
-            className="input input-accent w-full"
-            placeholder="Enter power"
-          />
-        </div>
-
-        <h3 className="font-semibold text-center mt-4">Fuel Consumption</h3>
-        {["urban", "road", "combined"].map((type) => (
-          <div key={type} className="flex items-center gap-4">
-            <label className="min-w-[12rem] font-semibold text-right">
-              {type.charAt(0).toUpperCase() + type.slice(1)} (L/100km)
-            </label>
-            <input
-              type="number"
-              className="input input-accent w-full"
-              placeholder="Enter fuel consumption"
-            />
-          </div>
-        ))}
-
-        <h3 className="text-center font-semibold mt-4 ">
-          Weight (Check your car registration certificate)
-        </h3>
-        {[
-          "Curb weight",
-          "Gross weight",
-          "Tow weight with brakes",
-          "Tow weight without brakes",
-        ].map((label) => (
-          <div key={label} className="flex items-center gap-4">
-            <label className="min-w-[15rem] font-semibold text-right whitespace-nowrap">
-              {label} (kg)
-            </label>
-            <input
-              type="number"
-              className="input input-accent max-w-[16rem]"
-              placeholder="Enter weight"
-            />
-          </div>
-        ))}
 
         <div className="flex justify-center mt-4">
           <button type="submit" className="btn btn-accent w-1/4">

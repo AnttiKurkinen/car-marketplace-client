@@ -143,7 +143,8 @@ const BasicInformationForm: React.FC = () => {
 
       const data = await response.json();
       console.log("Car created:", data);
-      //router.push("/sell_cars/add-technical");
+      localStorage.setItem("CarID", data.CarID);
+      router.push("/new-listing/add-technical");
     } catch (error) {
       console.error("Error creating car:", error);
     }
@@ -154,8 +155,9 @@ const BasicInformationForm: React.FC = () => {
       <h2 className="text-md font-bold border-b pb-2 mb-4">
         Basic Information
       </h2>
+
       <form
-        className="max-w-3xl mx-auto space-y-4"
+        className="max-w-3xl mx-auto space-y-1.5"
         onSubmit={(e) => {
           e.preventDefault();
           handleSubmit(e);
